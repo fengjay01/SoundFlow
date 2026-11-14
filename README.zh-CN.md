@@ -101,7 +101,7 @@ sudo apt-get install -y python3.12 python3.12-venv  # Python 3.12（Ubuntu 22.04
 git clone https://github.com/fengjay01/SoundFlow.git && cd SoundFlow
 corepack pnpm dev:setup:desktop   # 装依赖 + 建 .venv/bootstrap（Python 3.12 + requests[socks]）+ 自检
 corepack pnpm dev:desktop         # Tauri 窗口 + 前端热更新 + Rust / Python Worker
-corepack pnpm test:all            # 一次跑完三层验证
+corepack pnpm test:all            # 与 CI 同构的三层验证
 ```
 
 ### 3. 只改界面 / 文案 / i18n（轻量路径）
@@ -362,15 +362,15 @@ start "" /b /wait "Pymss Studio.exe" --debug
 
 ### 环境准备
 
-命令见顶部[开发者快速开始](#开发者快速开始)。版本契约：[`setup/toolchain.json`](./setup/toolchain.json)（Node 22 / pnpm 10.33.2 / Python 3.12 / Rust stable），`package.json` 的 `engines` / `packageManager` 与 `.nvmrc` 均与之对齐；`pnpm test:all` 用同样版本跑完三层验证。完整路径与缓存契约见 [`setup/README.md`](./setup/README.md)。
+命令见顶部[开发者快速开始](#开发者快速开始)。版本契约：[`setup/toolchain.json`](./setup/toolchain.json)（Node 22 / pnpm 10.33.2 / Python 3.12 / Rust stable），`package.json` 的 `engines` / `packageManager`、`.nvmrc` 与 CI 均与之对齐；CI 使用同样版本运行 `pnpm test:all` 与前端构建。完整路径与缓存契约见 [`setup/README.md`](./setup/README.md)。
 
 三端差异只有两处：Tauri 系统依赖的安装命令、venv 解释器路径（`.venv/bootstrap/Scripts/python.exe` vs `.venv/bootstrap/bin/python`），后者由 `dev-env.mjs` 按 `process.platform` 处理。`pnpm dev:desktop` 把环境类缓存（pip / cargo / npm / pnpm / XDG / 临时目录）pin 进项目内 `.venv/`，而可能存放模型权重的缓存（HF / torch.hub / ModelScope）落到 `data/models/_cache/`，全部都在仓库内，**不写系统盘**；解释器可用 `PYMSS_STUDIO_PYTHON` 覆盖。中国网络策略是可选的：`SOUNDFLOW_CN_NETWORK=1` 才启用镜像，默认不改动开发者的代理设置。
 
-**路径契约。** 所有默认落点都由代码位置推导 —— [`python/_project_paths.py`](./python/_project_paths.py) 用 `__file__`、Rust 用 `CARGO_MANIFEST_DIR`、Node 用 `import.meta.url` —— 不把用户目录当默认值，环境变量只作覆盖。分层判据只有一条「这个目录会不会出现模型权重」：会 → `data/models/_cache/`，不会 → `.venv/`。调试脚本与产物经 [`scripts/debug_paths.py`](./scripts/debug_paths.py) 的 `debug_out()` 统一写入仓库根内 `_debug_output/`，且不会进提交。`pnpm env:paths` 可查看并断言所有注入路径；`pnpm env:paths` 与 `pnpm env:doctor` 都包含 `paths-local` 断言，出现越界即失败。
+**路径契约。** 所有默认落点都由代码位置推导 —— [`python/_project_paths.py`](./python/_project_paths.py) 用 `__file__`、Rust 用 `CARGO_MANIFEST_DIR`、Node 用 `import.meta.url` —— 不把用户目录当默认值，环境变量只作覆盖。分层判据只有一条「这个目录会不会出现模型权重」：会 → `data/models/_cache/`，不会 → `.venv/`。调试脚本与产物经 [`scripts/debug_paths.py`](./scripts/debug_paths.py) 的 `debug_out()` 统一写入仓库根内 `_debug_output/`，且不会进提交。`pnpm env:paths` 可查看并断言所有注入路径；`pnpm env:doctor` 与 CI 也包含 `paths-local` 断言，出现越界即失败。
 
 推理环境（torch / CUDA / `pymss`）在应用内「设置 → 运行环境」安装，dev 构建下落到 `.venv/python/runtime-envs/`（由 `src-tauri/src/storage.rs` 按 `CARGO_MANIFEST_DIR` 推导，三端一致，且不会被 `cargo clean` 清掉）；模型权重在模型库下载。同一次安装也会把歌词依赖装进该运行环境，无需再建独立的歌词环境。FFmpeg / FFprobe 只在开发音频工具时需要。
 
-卡住了跑 `corepack pnpm env:doctor` 看逐项诊断。只改前端运行 `pnpm test:frontend` 与 `pnpm build`，改 Worker 或后端运行对应层的测试。`pnpm test:all` 由 `dev-env.mjs` 注入同一份环境后依次执行三层，前端 `node --test` 与 Rust `cargo test` 的临时文件、cargo 缓存也落在 `.venv/`，**不写系统盘**。
+卡住了跑 `corepack pnpm env:doctor` 看逐项诊断。只改前端运行 `pnpm test:frontend` 与 `pnpm build`，改 Worker 或后端运行对应层的测试。`pnpm test:all` 由 `dev-env.mjs` 注入同一份环境后依次执行三层，前端 `node --test` 与 Rust `cargo test` 的临时文件、cargo 缓存也落在 `.venv/`，**不写系统盘**，与 CI 同构。
 
 ### 常用命令
 
@@ -404,7 +404,7 @@ start "" /b /wait "Pymss Studio.exe" --debug
 | `python -m unittest discover -s tests/python -p "test_project_paths.py" -v` | 路径契约单元测试（`tests/python/test_project_paths.py`）。 |
 | `dev-local.bat`（Windows，可选） | 双击启动桌面应用，等价于 `pnpm dev:desktop`；`--check` 只检查 Node / pnpm。 |
 
-只修改文档时检查内容和链接即可；前端修改应运行相应测试与 `pnpm build`，Worker 或后端修改应执行对应层测试。工具链契约固定 Node 22 / Python 3.12 / Rust stable，`pnpm test:all` 会在同一份 `dev-env.mjs` 环境下本地跑完三层验证。
+只修改文档时检查内容和链接即可；前端修改应运行相应测试与 `pnpm build`，Worker 或后端修改应执行对应层测试。CI 使用 Node 22 / Python 3.12 / Rust stable 跑 `pnpm test:all` 与前端构建，并在 ubuntu / macos / windows 三端跑前端测试与构建（见 [ci.yml](./.github/workflows/ci.yml)）。
 
 <details>
 <summary>Python Worker 调试与环境变量</summary>
@@ -464,6 +464,7 @@ flowchart LR
 ├── _debug_output/         # 调试产物（已忽略，位于仓库根内）
 ├── .venv/                 # 仅本机的缓存、bootstrap venv 与运行时环境（已忽略）
 ├── data/                  # 仅本机的模型库与缓存（已忽略）
+├── .github/workflows/     # CI 与 Windows / macOS / Linux 发布流程（由上游适配）
 ├── installer/             # Windows 安装器资源
 └── images/screenshots/    # 中英文浅色 / 深色截图
 ```
@@ -475,7 +476,7 @@ Windows 发布流程准备基础 Python 和指定后端环境，构建 Tauri 可
 ./scripts/prepare-python-runtime.ps1 -Variant default -InitialBackend cpu
 ```
 
-以上是独立的环境准备示例，应选择其中一项，而非依次执行。准备脚本会写入 `python-runtime/`，需要联网且下载量较大。当前仓库不包含 CI 与发布工作流，这些命令仅作为手动打包时的参考。
+以上是独立的环境准备示例，应选择其中一项，而非依次执行。准备脚本会写入 `python-runtime/`，需要联网且下载量较大。完整暂存、签名、校验和分卷逻辑以 [Windows 工作流](./.github/workflows/release-windows.yml)、[macOS 工作流](./.github/workflows/release-macos.yml) 与 [Linux 工作流](./.github/workflows/release-linux.yml) 为准。这些流程由上游 Pymss Studio 适配而来：发布需要在仓库中配置 `HF_TOKEN`、`MODELSCOPE_API_TOKEN` 与 `TAURI_SIGNING_*` secrets，产物名沿用安装器使用的历史前缀 `Pymss-Studio-`。
 
 </details>
 

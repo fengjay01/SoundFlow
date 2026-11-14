@@ -1,0 +1,323 @@
+# Adapted from the upstream Pymss Studio workflows (2026-11-01 snapshot).
+# SoundFlow changes: the official-build check targets fengjay01/SoundFlow, and
+# the Tauri binary is read from src-tauri/target/release/SoundFlow.exe.
+# Artifact names, the installer EXE name and the pymss-studio.portable marker
+# keep their legacy identifiers on purpose: installer/pymss-studio.iss and
+# src-tauri/src/storage.rs still depend on them.
+# Publish jobs expect HF_TOKEN, MODELSCOPE_API_TOKEN and TAURI_SIGNING_* secrets.
+name: Release Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version"
+        required: true
+        default: "0.0.8"
+      target:
+        description: "Build target"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - macos
+          - windows
+          - linux
+      publish:
+        description: "Publish a GitHub Release"
+        required: true
+        default: false
+        type: boolean
+      prerelease:
+        description: "Publish and mark the GitHub Release as a pre-release"
+        required: true
+        default: false
+        type: boolean
+      allow_auto_update:
+        description: "Allow this release to be installed through automatic updates"
+        required: true
+        default: false
+        type: boolean
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.target == 'all' || github.event.inputs.target == 'windows'
+    uses: ./.github/workflows/release-windows.yml
+    with:
+      version: ${{ github.event.inputs.version || github.ref_name }}
+    secrets: inherit
+
+  macos:
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.target == 'all' || github.event.inputs.target == 'macos'
+    uses: ./.github/workflows/release-macos.yml
+    with:
+      version: ${{ github.event.inputs.version || github.ref_name }}
+    secrets: inherit
+
+  linux:
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.target == 'all' || github.event.inputs.target == 'linux'
+    uses: ./.github/workflows/release-linux.yml
+    with:
+      version: ${{ github.event.inputs.version || github.ref_name }}
+    secrets: inherit
+
+  github-release:
+    name: Publish GitHub Release
+    if: >-
+      always() &&
+      (
+        startsWith(github.ref, 'refs/tags/') ||
+        (github.event_name == 'workflow_dispatch' && (inputs.publish == true || inputs.prerelease == true))
+      ) &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    needs: [windows, macos, linux]
+    # Release bodies and the shared updater channel must be published serially.
+    concurrency:
+      group: pymss-studio-release-publish
+      cancel-in-progress: false
+      queue: max
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_VERSION_INPUT: ${{ github.event.inputs.version || github.ref_name }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Resolve release tag
+        id: release_meta
+        shell: bash
+        run: |
+          version="${RELEASE_VERSION_INPUT#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z][0-9A-Za-z.-]*)?(\+[0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
+            echo "Invalid semantic version: $RELEASE_VERSION_INPUT" >&2
+            exit 1
+          fi
+          version="${version#v}"
+          release_tag="v${version}"
+          echo "RELEASE_TAG=${release_tag}" >> "$GITHUB_ENV"
+          echo "RELEASE_NAME=Pymss Studio v${version}" >> "$GITHUB_ENV"
+          echo "RELEASE_VERSION=${version}" >> "$GITHUB_ENV"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          windows_result="${{ needs.windows.result }}"
+          macos_result="${{ needs.macos.result }}"
+          linux_result="${{ needs.linux.result }}"
+          if [[ "$windows_result" != "success" && "$macos_result" != "success" && "$linux_result" != "success" ]]; then
+            echo "RELEASE_PRERELEASE=true" >> "$GITHUB_ENV"
+          elif [[ "$version" == *-* ]]; then
+            echo "RELEASE_PRERELEASE=true" >> "$GITHUB_ENV"
+          else
+            echo "RELEASE_PRERELEASE=${{ github.event_name == 'workflow_dispatch' && inputs.prerelease == true }}" >> "$GITHUB_ENV"
+          fi
+          requested_auto_update="${{ github.event_name == 'workflow_dispatch' && inputs.allow_auto_update == true }}"
+          echo "RELEASE_AUTO_UPDATE_SUPPORTED=$requested_auto_update" >> "$GITHUB_ENV"
+          echo "RELEASE_MACOS_AUTO_UPDATE_SUPPORTED=$requested_auto_update" >> "$GITHUB_ENV"
+          echo "RELEASE_LINUX_AUTO_UPDATE_SUPPORTED=$requested_auto_update" >> "$GITHUB_ENV"
+          echo "Automatic update requested: $requested_auto_update"
+          update_message=""
+          if [[ "$requested_auto_update" != "true" ]]; then
+            update_message="This release requires manual installation from GitHub because automatic updates were not enabled for this release."
+          fi
+          echo "RELEASE_UPDATE_MESSAGE=$update_message" >> "$GITHUB_ENV"
+      - name: Download Windows portable artifacts
+        if: needs.windows.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+          pattern: Pymss-Studio-${{ steps.release_meta.outputs.version }}-windows-x64-*-portable
+      - name: Download Windows setup artifacts
+        if: needs.windows.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+          pattern: Pymss-Studio-${{ steps.release_meta.outputs.version }}-windows-x64-*-setup
+      - name: Download Windows update archives
+        if: needs.windows.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+          pattern: Pymss-Studio-${{ steps.release_meta.outputs.version }}-windows-x64-update
+      - name: Download macOS release artifacts
+        if: needs.macos.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+          pattern: Pymss-Studio-${{ steps.release_meta.outputs.version }}-macos-*-mlx
+      - name: Download Linux release artifacts
+        if: needs.linux.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+          pattern: Pymss-Studio-${{ steps.release_meta.outputs.version }}-linux-x64-appimage
+      - name: Validate release asset sizes
+        shell: bash
+        run: |
+          set -euo pipefail
+          max_size=$((2 * 1024 * 1024 * 1024))
+
+          shopt -s nullglob
+          for file in artifacts/*; do
+            [ -f "$file" ] || continue
+            size=$(stat -c%s "$file")
+            if [ "$size" -ge "$max_size" ]; then
+              echo "::error::Release asset must be smaller than 2 GiB: $(basename "$file") (${size} bytes)"
+              exit 1
+            fi
+          done
+      - name: Sign managed update assets
+        if: needs.windows.result == 'success' || needs.macos.result == 'success' || needs.linux.result == 'success'
+        shell: bash
+        env:
+          WINDOWS_BUILD_RESULT: ${{ needs.windows.result }}
+          MACOS_BUILD_RESULT: ${{ needs.macos.result }}
+          LINUX_BUILD_RESULT: ${{ needs.linux.result }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
+            echo "TAURI_SIGNING_PRIVATE_KEY secret is required to sign managed update assets" >&2
+            exit 1
+          fi
+          shopt -s nullglob
+          files=()
+          if [ "$WINDOWS_BUILD_RESULT" = "success" ]; then
+            windows=(artifacts/*-windows-x64-update.zip)
+            if [ "${#windows[@]}" -ne 1 ]; then
+              echo "Expected one Windows update archive" >&2
+              exit 1
+            fi
+            files+=("${windows[@]}")
+          fi
+          if [ "$MACOS_BUILD_RESULT" = "success" ]; then
+            macos=(artifacts/*-macos-arm64-update.app.tar.gz)
+            if [ "${#macos[@]}" -ne 1 ]; then
+              echo "Expected one macOS update archive" >&2
+              exit 1
+            fi
+            files+=("${macos[@]}")
+          fi
+          if [ "$LINUX_BUILD_RESULT" = "success" ]; then
+            linux=(artifacts/*-linux-x64.AppImage)
+            if [ "${#linux[@]}" -ne 1 ]; then
+              echo "Expected one Linux AppImage" >&2
+              exit 1
+            fi
+            files+=("${linux[@]}")
+          fi
+          for file in "${files[@]}"; do
+            max_update_size=$((2 * 1024 * 1024 * 1024 - 1))
+            if [[ "$file" == *-windows-x64-update.zip ]]; then
+              max_update_size=$((512 * 1024 * 1024))
+            fi
+            if [ "$(stat -c%s "$file")" -gt "$max_update_size" ]; then
+              echo "Managed update archive exceeds its platform size limit: $file" >&2
+              exit 1
+            fi
+            pnpm dlx @tauri-apps/cli@2.11.0 signer sign "$file"
+          done
+      - name: Generate managed update metadata
+        if: needs.windows.result == 'success' || needs.macos.result == 'success' || needs.linux.result == 'success'
+        run: python3 scripts/generate-update-metadata.py
+      - name: Prepare reviewed release notes
+        id: release_notes
+        shell: bash
+        env:
+          RELEASE_NOTES_OUTPUT: ${{ runner.temp }}/pymss-release-notes.md
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ -f ".github/release-notes/${RELEASE_VERSION}.md" ]]; then
+            python3 scripts/generate-release-notes.py --include-published --output "$RELEASE_NOTES_OUTPUT"
+            echo "body_path=$RELEASE_NOTES_OUTPUT" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::No reviewed notes for ${RELEASE_VERSION}; using GitHub-generated release notes."
+          fi
+      - name: Generate release checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd artifacts
+          find . -maxdepth 1 -type f ! -name 'SHA256SUMS' -printf '%f\n' | sort | xargs -r sha256sum > SHA256SUMS
+      - name: Stage artifacts for mirror uploads
+        id: stage_mirrors
+        if: ${{ env.HF_TOKEN != '' || env.MODELSCOPE_API_TOKEN != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          staging="pms/${RELEASE_VERSION}"
+          mkdir -p "$staging"
+          shopt -s nullglob
+          copied=0
+          for file in artifacts/*; do
+            [ -f "$file" ] || continue
+            # Hard-link release assets into the mirror staging directory.
+            ln -f "$file" "$staging/"
+            copied=$((copied + 1))
+          done
+          echo "Staged $copied file(s) under $staging/"
+          ls -la "$staging"
+      - uses: softprops/action-gh-release@v2
+        id: publish_release
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_NAME }}
+          prerelease: ${{ env.RELEASE_PRERELEASE }}
+          body_path: ${{ steps.release_notes.outputs.body_path }}
+          generate_release_notes: true
+          files: artifacts/*
+
+      - uses: softprops/action-gh-release@v2
+        if: needs.windows.result == 'success' || needs.macos.result == 'success' || needs.linux.result == 'success'
+        with:
+          tag_name: updater
+          name: Pymss Studio Update Channel
+          body: Managed update metadata for Pymss Studio. This release is managed by CI.
+          prerelease: true
+          make_latest: false
+          overwrite_files: true
+          files: artifacts/*-v1-*-update.json
+
+      - name: Set up uv
+        id: setup_mirror_uploads
+        if: ${{ !cancelled() && steps.stage_mirrors.outcome == 'success' && steps.publish_release.outcome == 'success' && (env.HF_TOKEN != '' || env.MODELSCOPE_API_TOKEN != '') }}
+        uses: astral-sh/setup-uv@v6
+
+      - name: Upload release files to HuggingFace dataset
+        if: ${{ !cancelled() && steps.setup_mirror_uploads.outcome == 'success' && env.HF_TOKEN != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Uploading pms/${RELEASE_VERSION}/ to HuggingFace dataset HuanLin/Pymss-Studio-Dist:${RELEASE_VERSION}"
+          uvx --from "huggingface_hub[cli]" hf upload --type dataset HuanLin/Pymss-Studio-Dist "pms/${RELEASE_VERSION}" "${RELEASE_VERSION}"
+          echo "HuggingFace dataset upload completed."
+
+      - name: Upload release files to ModelScope dataset
+        if: ${{ !cancelled() && steps.setup_mirror_uploads.outcome == 'success' && env.MODELSCOPE_API_TOKEN != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Uploading pms/${RELEASE_VERSION}/ to ModelScope dataset huanlinoto/Pymss-Studio-Dist:${RELEASE_VERSION}"
+          uvx modelscope upload --repo-type dataset huanlinoto/Pymss-Studio-Dist "pms/${RELEASE_VERSION}" "${RELEASE_VERSION}"
+          echo "ModelScope dataset upload completed."

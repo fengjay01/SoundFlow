@@ -101,7 +101,7 @@ sudo apt-get install -y python3.12 python3.12-venv  # Python 3.12 (Ubuntu 22.04 
 git clone https://github.com/fengjay01/SoundFlow.git && cd SoundFlow
 corepack pnpm dev:setup:desktop   # install deps + create .venv/bootstrap (Python 3.12 + requests[socks]) + check
 corepack pnpm dev:desktop         # Tauri window + frontend hot reload + Rust / Python worker
-corepack pnpm test:all            # all three test layers in one run
+corepack pnpm test:all            # same three-layer verification as CI
 ```
 
 ### 3. UI / copy / i18n only (lightweight path)
@@ -362,15 +362,15 @@ For unresolved issues, include application version and package type, OS version,
 
 ### Prerequisites
 
-Commands are in [Developer quick start](#developer-quick-start) above. The toolchain contract lives in [`setup/toolchain.json`](./setup/toolchain.json) (Node 22 / pnpm 10.33.2 / Python 3.12 / Rust stable); `package.json` (`engines` / `packageManager`) and `.nvmrc` align with it, and `pnpm test:all` runs the three test layers with those versions. The full path and cache contract is documented in [`setup/README.md`](./setup/README.md).
+Commands are in [Developer quick start](#developer-quick-start) above. The toolchain contract lives in [`setup/toolchain.json`](./setup/toolchain.json) (Node 22 / pnpm 10.33.2 / Python 3.12 / Rust stable); `package.json` (`engines` / `packageManager`), `.nvmrc` and CI all align with it, and CI runs `pnpm test:all` plus the frontend build with the same versions. The full path and cache contract is documented in [`setup/README.md`](./setup/README.md).
 
 There are only two real platform differences: the commands that install Tauri's system packages, and the venv interpreter path (`.venv/bootstrap/Scripts/python.exe` vs `.venv/bootstrap/bin/python`), handled by `dev-env.mjs` via `process.platform`. `pnpm dev:desktop` pins environment caches (pip / cargo / npm / pnpm / XDG / temp) inside `.venv/`, while caches that can hold model weights (HF / torch.hub / ModelScope) go to `data/models/_cache/` — all inside the checkout, so **nothing is written to the system drive**; override the interpreter with `PYMSS_STUDIO_PYTHON`. The CN network policy is opt-in: only `SOUNDFLOW_CN_NETWORK=1` enables mirrors; the default never touches a developer's proxy settings.
 
-**Path contract.** Every default location is derived from code position — `__file__` in [`python/_project_paths.py`](./python/_project_paths.py), `CARGO_MANIFEST_DIR` in Rust, `import.meta.url` in Node — never from the user's home directory; environment variables only override it. The single layering rule is "can model weights appear here?": yes → `data/models/_cache/`, no → `.venv/`. Debug scripts and artifacts go to `_debug_output/` inside the repo root via `debug_out()` from [`scripts/debug_paths.py`](./scripts/debug_paths.py) and are excluded from commits. Run `pnpm env:paths` to review every pinned path; both `pnpm env:paths` and `pnpm env:doctor` assert `paths-local`, so a stray path fails the check.
+**Path contract.** Every default location is derived from code position — `__file__` in [`python/_project_paths.py`](./python/_project_paths.py), `CARGO_MANIFEST_DIR` in Rust, `import.meta.url` in Node — never from the user's home directory; environment variables only override it. The single layering rule is "can model weights appear here?": yes → `data/models/_cache/`, no → `.venv/`. Debug scripts and artifacts go to `_debug_output/` inside the repo root via `debug_out()` from [`scripts/debug_paths.py`](./scripts/debug_paths.py) and are excluded from commits. Run `pnpm env:paths` to review every pinned path; `pnpm env:doctor` and CI also assert `paths-local`, so a stray path fails the check.
 
 Inference runtimes (torch / CUDA / `pymss`) are installed through **Settings → Runtime**. In dev builds they land in `.venv/python/runtime-envs/` (derived from `CARGO_MANIFEST_DIR` by `src-tauri/src/storage.rs`, identical on all three OSes, and safe from `cargo clean`); model weights are downloaded in the model library. The same action installs the lyrics dependencies into that runtime — no separate lyrics environment is needed. FFmpeg / FFprobe are only needed for audio-tool development.
 
-Stuck? `corepack pnpm env:doctor` prints a per-item report. Frontend changes need `pnpm test:frontend` and `pnpm build`; Worker or backend changes need the corresponding layer's tests. `pnpm test:all` runs all three layers under one environment injected by `dev-env.mjs`, so the temporary files and cargo cache of `node --test` and `cargo test` also stay inside `.venv/` — **nothing is written to the system drive**.
+Stuck? `corepack pnpm env:doctor` prints a per-item report. Frontend changes need `pnpm test:frontend` and `pnpm build`; Worker or backend changes need the corresponding layer's tests. `pnpm test:all` runs all three layers under one environment injected by `dev-env.mjs`, so the temporary files and cargo cache of `node --test` and `cargo test` also stay inside `.venv/` — **nothing is written to the system drive**, matching CI.
 
 ### Commands
 
@@ -404,7 +404,7 @@ The project defaults to its configured remote repository, including during deskt
 | `python -m unittest discover -s tests/python -p "test_project_paths.py" -v` | Path-contract unit tests (`tests/python/test_project_paths.py`). |
 | `dev-local.bat` (Windows, optional) | Double-click to launch the desktop app (equivalent to `pnpm dev:desktop`); `--check` only verifies Node / pnpm. |
 
-For documentation changes, verify content and links. Frontend changes should run relevant tests and `pnpm build`; Worker/backend changes should run the corresponding layer's tests. The toolchain contract pins Node 22 / Python 3.12 / Rust stable, and `pnpm test:all` runs all three test layers locally under that same `dev-env.mjs` environment.
+For documentation changes, verify content and links. Frontend changes should run relevant tests and `pnpm build`; Worker/backend changes should run the corresponding layer's tests. CI uses Node 22 / Python 3.12 / Rust stable for `pnpm test:all` plus the frontend build, and runs the frontend tests/build on ubuntu, macos and windows (see [ci.yml](./.github/workflows/ci.yml)).
 
 <details>
 <summary>Python Worker debugging and environment variables</summary>
@@ -464,6 +464,7 @@ flowchart LR
 ├── _debug_output/         # Local debug artifacts (gitignored, inside the repo root)
 ├── .venv/                 # Local-only caches, bootstrap venv, runtime envs (gitignored)
 ├── data/                  # Local-only model library and caches (gitignored)
+├── .github/workflows/     # CI and Windows/macOS/Linux release pipelines (adapted from upstream)
 ├── installer/             # Windows installer resources
 └── images/screenshots/    # English/Chinese light/dark screenshots
 ```
@@ -475,7 +476,7 @@ Windows releases prepare bootstrap Python and a backend environment, build the T
 ./scripts/prepare-python-runtime.ps1 -Variant default -InitialBackend cpu
 ```
 
-These are alternative runtime preparation examples; select one rather than running them sequentially. Preparation writes `python-runtime/`, requires network access, and involves large downloads. This repository does not ship CI or release workflows, so treat them as manual packaging references.
+These are alternative runtime preparation examples; select one rather than running them sequentially. Preparation writes `python-runtime/`, requires network access, and involves large downloads. See the [Windows](./.github/workflows/release-windows.yml), [macOS](./.github/workflows/release-macos.yml) and [Linux](./.github/workflows/release-linux.yml) workflows for complete staging, signing, validation, and asset splitting. The pipelines are adapted from upstream Pymss Studio: publishing needs the `HF_TOKEN`, `MODELSCOPE_API_TOKEN` and `TAURI_SIGNING_*` repository secrets, and artifact names keep the legacy `Pymss-Studio-` prefix used by the installer.
 
 </details>
 

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "SoundFlow",
+  "version": "0.0.12",
+  "identifier": "studio.pymss.desktop",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "SoundFlow",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 980,
+        "minHeight": 680,
+        "decorations": true,
+        "transparent": false,
+        "visible": false
+      }
+    ],
+    "security": {
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$APPDATA/**",
+          "$HOME/.pymss-studio/**",
+          "**"
+        ]
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "app",
+      "dmg",
+      "deb",
+      "rpm"
+    ],
+    "resources": [
+      "resources/plugin-sdk/*",
+      "../python/*.py",
+      "../python/*.json",
+      "../python/*.txt",
+      "../python/preinstalled_plugins/**/*"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "macOS": {
+      "minimumSystemVersion": "14.0.0",
+      "entitlements": "entitlements.plugins.plist"
+    },
+    "publisher": "TheSmallHanCat"
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE5NzUyREY2NjAyNDVDQjAKUldTd1hDUmc5aTExcVFtUGM3ajB4R09ueU9xM3B6RG9xRDVKaUM0di9Qc1BpSGhYMXRFNUJvSWQK",
+      "endpoints": []
+    }
+  }
+}

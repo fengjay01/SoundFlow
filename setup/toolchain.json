@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "_note": "Single source of truth for developer toolchain versions. scripts/dev-env.mjs reads this file; package.json (engines / packageManager) and .github/workflows/ci.yml are kept aligned with it. .python-version is intentionally NOT used because .gitignore:25 ignores that file.",
+  "node": "22",
+  "pnpm": "10.33.2",
+  "python": "3.12",
+  "rust": "stable",
+  "tauriSystemDeps": {
+    "win32": "WebView2 Runtime + C++ build tools",
+    "darwin": "xcode-select --install",
+    "linux": "sudo apt-get install -y --no-install-recommends build-essential pkg-config libasound2-dev libwebkit2gtk-4.1-dev libssl-dev libxdo-dev libayatana-appindicator3-dev librsvg2-dev"
+  },
+  "pythonInstallHints": {
+    "win32": "Install Python 3.12 from python.org, or: winget install --id Python.Python.3.12 -e",
+    "darwin": "brew install python@3.12",
+    "linux": "sudo apt-get install -y python3.12 python3.12-venv (Ubuntu 22.04 may need the deadsnakes PPA)"
+  },
+  "_network": "Optional CN mirror/proxy policy is opt-in: set SOUNDFLOW_CN_NETWORK=1 or pass --cn to scripts/dev-env.mjs; the default never overrides a developer's proxy environment."
+}

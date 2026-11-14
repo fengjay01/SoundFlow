@@ -1,0 +1,880 @@
+{
+  "schema_version": 1,
+  "_comment": "模型清单。安装包**不含**任何模型权重，首次需要时由这里驱动下载。owner: desktop/services/model_manager.py",
+  "models": [
+    {
+      "id": "whisper-large-v3",
+      "category": "asr",
+      "name": "Whisper large-v3",
+      "purpose": "把音频里的演唱转成带时间戳的字，是对齐的输入",
+      "required_for": [
+        "lyrics_alignment"
+      ],
+      "default": true,
+      "download_policy": "first_run",
+      "recommended": true,
+      "approx_size": 3200000000,
+      "license": "MIT（OpenAI Whisper）",
+      "note": "最准。中文歌建议用它；显存不足或想先跑通可用 small。",
+      "source": {
+        "kind": "hf",
+        "repository": "Systran/faster-whisper-large-v3",
+        "cache_key": "models--Systran--faster-whisper-large-v3"
+      },
+      "verify": {
+        "kind": "hf_snapshot",
+        "files": {
+          "config.json": 2394,
+          "model.bin": 3087284237,
+          "preprocessor_config.json": 340,
+          "tokenizer.json": 2480617,
+          "vocabulary.json": 1068114
+        }
+      },
+      "direct": {
+        "_comment": "官方/国内官方托管源（魔搭 ModelScope）直链；优先于 HF，支持 Range 续传",
+        "kind": "modelscope",
+        "base": "https://modelscope.cn/models/pengzhendong/faster-whisper-large-v3/resolve/master/",
+        "files": {
+          "config.json": 2394,
+          "model.bin": 3087284237,
+          "preprocessor_config.json": 340,
+          "tokenizer.json": 2480617,
+          "vocabulary.json": 1068114
+        }
+      }
+    },
+    {
+      "id": "whisper-medium",
+      "category": "asr",
+      "name": "Whisper medium",
+      "purpose": "比 large-v3 小，速度快、准确度略降",
+      "required_for": [
+        "lyrics_alignment"
+      ],
+      "default": false,
+      "download_policy": "on_demand",
+      "approx_size": 1600000000,
+      "license": "MIT（OpenAI Whisper）",
+      "source": {
+        "kind": "hf",
+        "repository": "Systran/faster-whisper-medium",
+        "cache_key": "models--Systran--faster-whisper-medium"
+      },
+      "verify": {
+        "kind": "hf_presence",
+        "must_have": [
+          "model.bin",
+          "config.json"
+        ]
+      },
+      "direct": {
+        "_comment": "官方/国内官方托管源（魔搭 ModelScope）直链；优先于 HF，支持 Range 续传",
+        "kind": "modelscope",
+        "base": "https://modelscope.cn/models/pengzhendong/faster-whisper-medium/resolve/master/",
+        "files": {
+          "config.json": 2257,
+          "model.bin": 1527906378,
+          "tokenizer.json": 2203239,
+          "vocabulary.txt": 459861
+        }
+      }
+    },
+    {
+      "id": "whisper-small",
+      "category": "asr",
+      "name": "Whisper small",
+      "purpose": "体积最小，先跑通流程 / 显存紧张时用",
+      "required_for": [
+        "lyrics_alignment"
+      ],
+      "default": false,
+      "download_policy": "on_demand",
+      "approx_size": 500000000,
+      "license": "MIT（OpenAI Whisper）",
+      "source": {
+        "kind": "hf",
+        "repository": "Systran/faster-whisper-small",
+        "cache_key": "models--Systran--faster-whisper-small"
+      },
+      "verify": {
+        "kind": "hf_presence",
+        "must_have": [
+          "model.bin",
+          "config.json"
+        ]
+      },
+      "direct": {
+        "_comment": "官方/国内官方托管源（魔搭 ModelScope）直链；优先于 HF，支持 Range 续传",
+        "kind": "modelscope",
+        "base": "https://modelscope.cn/models/pengzhendong/faster-whisper-small/resolve/master/",
+        "files": {
+          "config.json": 2370,
+          "model.bin": 483546902,
+          "tokenizer.json": 2203239,
+          "vocabulary.txt": 459861
+        }
+      }
+    },
+    {
+      "id": "campplus-onnx",
+      "category": "diarization",
+      "name": "CAM++ ONNX",
+      "purpose": "CAM++ 的 ONNX 版本，结构与权重自包含；有了它分声部只依赖 onnxruntime，不需要 PyTorch",
+      "required_for": [
+        "singer_split"
+      ],
+      "default": true,
+      "download_policy": "bundled",
+      "approx_size": 28836000,
+      "license": "Apache-2.0（ModelScope 3D-Speaker；图由本仓库从同一份权重导出）",
+      "note": "随安装包提供，由 tools/export_campplus_onnx.py 生成。数值一致性有实测：真实音频归一化后 max|Δ|=5.5e-04、cos=0.999995；同一套评估脚本跑出 85.0%，与历史基线逐首一致。",
+      "source": {
+        "kind": "bundled",
+        "path": "models/campplus/campplus.onnx"
+      },
+      "verify": {
+        "kind": "files_exist",
+        "target": "diarization/campplus",
+        "must_have": [
+          "campplus.onnx"
+        ]
+      }
+    },
+    {
+      "id": "campplus",
+      "category": "diarization",
+      "name": "CAM++",
+      "purpose": "判断每句是 v1/v2/v3 里谁唱的（对唱左右分栏靠它）",
+      "required_for": [
+        "singer_split"
+      ],
+      "default": true,
+      "download_policy": "on_demand",
+      "approx_size": 28036335,
+      "license": "Apache-2.0（ModelScope 3D-Speaker）",
+      "note": "只有把「演唱者分段」设成强制 1/2/3 声部时才需要。",
+      "source": {
+        "kind": "http",
+        "urls": [
+          "https://modelscope.cn/models/iic/speech_campplus_sv_zh-cn_16k-common/resolve/master/campplus_cn_common.bin",
+          "https://hf-mirror.com/csukuangfj/speaker-embedding-models/resolve/main/campplus/campplus_cn_common.bin",
+          "https://huggingface.co/csukuangfj/speaker-embedding-models/resolve/main/campplus/campplus_cn_common.bin"
+        ],
+        "filename": "campplus_cn_common.bin"
+      },
+      "verify": {
+        "kind": "file_sha256",
+        "target": "diarization/campplus/campplus_cn_common.bin",
+        "sha256": "3388cf5fd3493c9ac9c69851d8e7a8badcfb4f3dc631020c4961371646d5ada8",
+        "size": 28036335
+      }
+    },
+    {
+      "id": "campplus-src",
+      "category": "diarization",
+      "name": "CAM++ Source",
+      "purpose": "CAM++ 的网络定义，随安装包提供",
+      "required_for": [
+        "singer_split"
+      ],
+      "default": true,
+      "download_policy": "bundled",
+      "approx_size": 45000,
+      "license": "Apache-2.0",
+      "note": "这是随程序分发的源码，不需要下载。",
+      "source": {
+        "kind": "bundled",
+        "path": "models/campplus_src"
+      },
+      "verify": {
+        "kind": "files_exist",
+        "target": "diarization/campplus_src",
+        "must_have": [
+          "model.py",
+          "components.py",
+          "amp.py",
+          "utils.py"
+        ]
+      }
+    },
+    {
+      "id": "demucs",
+      "category": "separation",
+      "name": "Demucs",
+      "purpose": "先把伴奏去掉再识别，嘈杂混音里更准（可选）",
+      "required_for": [
+        "vocal_separation"
+      ],
+      "default": false,
+      "download_policy": "on_demand",
+      "approx_size": 84141911,
+      "license": "MIT（Demucs）",
+      "note": "只有打开「人声分离」时才需要。",
+      "source": {
+        "kind": "http",
+        "urls": [
+          "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/955717e8-8726e21a.th"
+        ],
+        "note": "官方权重站（Meta CDN）。实测国内 4.13 MB/s；HF 上的 adefossez/HTDemucs 是 safetensors 且布局不同，**不是** demucs 包要的那份，别再指过去。"
+      },
+      "verify": {
+        "kind": "file_sha256",
+        "target": "separation/demucs/hub/checkpoints/955717e8-8726e21a.th",
+        "size": 84141911,
+        "sha256": "8726e21a993978c7ba086d3872e7608d7d5bfca646ca4aca459ffda844faa8b4"
+      }
+    },
+    {
+      "id": "tifa-aligner",
+      "category": "alignment",
+      "name": "TIFA",
+      "purpose": "音素级歌声对齐，实测逐字比 Whisper 更准；需要逐句 LRC",
+      "required_for": [
+        "lyrics_alignment",
+        "word_timing"
+      ],
+      "default": false,
+      "download_policy": "on_demand",
+      "recommended": false,
+      "approx_size": 158603152,
+      "license": "⚠️ TIFA-1.0-ST 模型文件：CC BY-NC-SA 4.0（非商业，OpenVPI）；TIFA 运行库源码：MIT。本项目 MIT 不覆盖模型文件；商用请勿使用 TIFA。",
+      "note": "实验引擎。通过模型管理下载（GitHub Release models-v1）；解包到 models/tifa。需要外部 Python + TIFA 依赖才能运行，缺任何一项自动回退 Whisper。模型为 CC BY-NC-SA 4.0，非商业；详见 THIRD_PARTY_NOTICES.md。",
+      "source": {
+        "kind": "github_release",
+        "repo": "6hdj/lrc-ttml",
+        "tag": "models-v1",
+        "note": "TIFA 运行库源码 MIT；TIFA-1.0-ST 模型 CC BY-NC-SA 4.0（非商业）；词典按上游条款"
+      },
+      "verify": {
+        "kind": "files_sha256",
+        "target": "alignment/tifa",
+        "files": {
+          "model.pt": {
+            "sha256": "8d9bf896da1827f36bf135f80c7ab1fc4f3c1d48f328818b8402c9527c0f014b",
+            "size": 158588551
+          },
+          "config.yaml": {
+            "sha256": "b4bdfd5c73ca3a01ff8675ca353c54d4c14eefa75a188eac9a22ab94e147f8ac",
+            "size": 1567
+          },
+          "vocabulary.json": {
+            "sha256": "644c85ac28cfe4f26fcf60de5a6d1fe192c11a6a837746119ef2dbc6dac9246c",
+            "size": 4115
+          },
+          "runtime/infer.py": {
+            "sha256": "575097aab0778cc8a0e929f845a27b48c9c1c4501704a40a6ff5ea9e9a5e9388",
+            "size": 8919
+          }
+        }
+      },
+      "mirror": {
+        "kind": "github_release",
+        "repo": "6hdj/lrc-ttml",
+        "tag": "models-v1",
+        "archive": "tifa-aligner.tar",
+        "files": [
+          "tifa-aligner.tar"
+        ],
+        "size": 171253760,
+        "sha256": "ce21c8427f44e167d6d66bfcea16898af0895ad3c079e54a99573d5bd8f9938f",
+        "dest": "alignment/tifa",
+        "urls": [
+          "https://gh-proxy.com/https://github.com/{repo}/releases/download/{tag}/{name}",
+          "https://github.boki.moe/https://github.com/{repo}/releases/download/{tag}/{name}",
+          "https://ghproxy.net/https://github.com/{repo}/releases/download/{tag}/{name}"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-fa",
+      "category": "alignment",
+      "name": "Qwen3-ForcedAligner 原版, FIXED",
+      "purpose": "AI 音节级强制对齐（AutoKaraoke 同款），实测字级最准（推荐引擎）",
+      "required_for": [
+        "qwen_align"
+      ],
+      "default": false,
+      "download_policy": "on_demand",
+      "approx_size": 1840070996,
+      "license": "Apache-2.0（Qwen3）",
+      "note": "官方 Qwen/Qwen3-ForcedAligner-0.6B（AutoKaraoke 同款 FIXED 运行时）。社区 Ultra 精修版见同分类独立条目。",
+      "source": {
+        "kind": "http_files",
+        "note": "ModelScope 官方镜像优先（国内直连快），hf-mirror 回退"
+      },
+      "files": [
+        {
+          "rel": "config.json",
+          "urls": [
+            "https://modelscope.cn/models/Qwen/Qwen3-ForcedAligner-0.6B/resolve/master/config.json",
+            "https://hf-mirror.com/Qwen/Qwen3-ForcedAligner-0.6B/resolve/main/config.json",
+            "https://huggingface.co/Qwen/Qwen3-ForcedAligner-0.6B/resolve/main/config.json"
+          ],
+          "size": 5982
+        },
+        {
+          "rel": "model.safetensors",
+          "urls": [
+            "https://modelscope.cn/models/Qwen/Qwen3-ForcedAligner-0.6B/resolve/master/model.safetensors",
+            "https://hf-mirror.com/Qwen/Qwen3-ForcedAligner-0.6B/resolve/main/model.safetensors",
+            "https://huggingface.co/Qwen/Qwen3-ForcedAligner-0.6B/resolve/main/model.safetensors"
+          ],
+          "size": 1835544544
+        },
+        {
+          "rel": "preprocessor_config.json",
+          "urls": [
+            "https://modelscope.cn/models/Qwen/Qwen3-ForcedAligner-0.6B/resolve/master/preprocessor_config.json",
+            "https://hf-mirror.com/Qwen/Qwen3-ForcedAligner-0.6B/resolve/main/preprocessor_config.json",
+            "https://huggingface.co/Qwen/Qwen3-ForcedAligner-0.6B/resolve/main/preprocessor_config.json"
+          ],
+          "size": 330
+        },
+        {
+          "rel": "tokenizer_config.json",
+          "urls": [
+            "https://modelscope.cn/models/Qwen/Qwen3-ForcedAligner-0.6B/resolve/master/tokenizer_config.json",
+            "https://hf-mirror.com/Qwen/Qwen3-ForcedAligner-0.6B/resolve/main/tokenizer_config.json",
+            "https://huggingface.co/Qwen/Qwen3-ForcedAligner-0.6B/resolve/main/tokenizer_config.json"
+          ],
+          "size": 12666
+        },
+        {
+          "rel": "vocab.json",
+          "urls": [
+            "https://modelscope.cn/models/Qwen/Qwen3-ForcedAligner-0.6B/resolve/master/vocab.json",
+            "https://hf-mirror.com/Qwen/Qwen3-ForcedAligner-0.6B/resolve/main/vocab.json",
+            "https://huggingface.co/Qwen/Qwen3-ForcedAligner-0.6B/resolve/main/vocab.json"
+          ],
+          "size": 2776833
+        }
+      ],
+      "verify": {
+        "kind": "files_sha256",
+        "target": "alignment/Qwen3-ForcedAligner-0.6B",
+        "files": {
+          "config.json": {
+            "sha256": "d616c65d46c4b90bdc651b0a0963ea932732241140f337f9bb6b0335a9c8ef09",
+            "size": 5982
+          },
+          "model.safetensors": {
+            "sha256": "47831d0e82f96b20e9034dba01a075ee06436654719f6a68289e49f1b65ce0e7",
+            "size": 1835544544
+          },
+          "preprocessor_config.json": {
+            "sha256": "45e120a4eda2c20c5d7f2ea9354e63536bf35e27aa573fb7cdf78017b378770d",
+            "size": 330
+          },
+          "tokenizer_config.json": {
+            "sha256": "3ab80063f8511deb9566e6ad438d17b7a6277fcffd52d92854112f19d36bd81c",
+            "size": 12666
+          },
+          "vocab.json": {
+            "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+            "size": 2776833
+          }
+        }
+      }
+    },
+    {
+      "id": "qwen3-asr",
+      "category": "asr",
+      "name": "Qwen3-ASR-1.7B",
+      "purpose": "专为歌声训练的本地转录（歌词校对/备用）",
+      "required_for": [
+        "qwen_align"
+      ],
+      "default": false,
+      "download_policy": "on_demand",
+      "approx_size": 4703112845,
+      "license": "Apache-2.0（Qwen3）",
+      "note": "专为歌声训练的本地语音识别（歌词校对/纯文本模式的行级骨架定位）。模型本身是 ASR，归类「语音识别」；对齐引擎内部会自动调用。",
+      "source": {
+        "kind": "http_files",
+        "note": "ModelScope 官方镜像优先（国内直连快），hf-mirror 回退"
+      },
+      "files": [
+        {
+          "rel": "config.json",
+          "urls": [
+            "https://modelscope.cn/models/Qwen/Qwen3-ASR-1.7B/resolve/master/config.json",
+            "https://hf-mirror.com/Qwen/Qwen3-ASR-1.7B/resolve/main/config.json"
+          ],
+          "size": 6194
+        },
+        {
+          "rel": "model-00001-of-00002.safetensors",
+          "urls": [
+            "https://modelscope.cn/models/Qwen/Qwen3-ASR-1.7B/resolve/master/model-00001-of-00002.safetensors",
+            "https://hf-mirror.com/Qwen/Qwen3-ASR-1.7B/resolve/main/model-00001-of-00002.safetensors"
+          ],
+          "size": 4220320824
+        },
+        {
+          "rel": "model-00002-of-00002.safetensors",
+          "urls": [
+            "https://modelscope.cn/models/Qwen/Qwen3-ASR-1.7B/resolve/master/model-00002-of-00002.safetensors",
+            "https://hf-mirror.com/Qwen/Qwen3-ASR-1.7B/resolve/main/model-00002-of-00002.safetensors"
+          ],
+          "size": 478200688
+        },
+        {
+          "rel": "model.safetensors.index.json",
+          "urls": [
+            "https://modelscope.cn/models/Qwen/Qwen3-ASR-1.7B/resolve/master/model.safetensors.index.json",
+            "https://hf-mirror.com/Qwen/Qwen3-ASR-1.7B/resolve/main/model.safetensors.index.json"
+          ],
+          "size": 64821
+        },
+        {
+          "rel": "preprocessor_config.json",
+          "urls": [
+            "https://modelscope.cn/models/Qwen/Qwen3-ASR-1.7B/resolve/master/preprocessor_config.json",
+            "https://hf-mirror.com/Qwen/Qwen3-ASR-1.7B/resolve/main/preprocessor_config.json"
+          ],
+          "size": 330
+        },
+        {
+          "rel": "tokenizer_config.json",
+          "urls": [
+            "https://modelscope.cn/models/Qwen/Qwen3-ASR-1.7B/resolve/master/tokenizer_config.json",
+            "https://hf-mirror.com/Qwen/Qwen3-ASR-1.7B/resolve/main/tokenizer_config.json"
+          ],
+          "size": 12487
+        },
+        {
+          "rel": "vocab.json",
+          "urls": [
+            "https://modelscope.cn/models/Qwen/Qwen3-ASR-1.7B/resolve/master/vocab.json",
+            "https://hf-mirror.com/Qwen/Qwen3-ASR-1.7B/resolve/main/vocab.json"
+          ],
+          "size": 2776833
+        }
+      ],
+      "verify": {
+        "kind": "files_sha256",
+        "target": "asr/Qwen3-ASR-1.7B",
+        "files": {
+          "config.json": {
+            "sha256": "2e74a751548b8ad7d7526d29365ad8144c345d8b412b1152d25dc6698452712f",
+            "size": 6194
+          },
+          "model-00001-of-00002.safetensors": {
+            "sha256": "a4cd1f1a04d90b757dc7f7dd26254e69a013b19e80efe590a83c6a3bde8608d6",
+            "size": 4220320824
+          },
+          "model-00002-of-00002.safetensors": {
+            "sha256": "6e0b9d9e09e2e0238e7ef3cc8a484ab387e91b90f1900bedf88bc92d7929ccfc",
+            "size": 478200688
+          },
+          "model.safetensors.index.json": {
+            "sha256": "f994739fe38e5210b9e3e8ce6c6307315e2ceac3cb630e7b7414d69dce520f60",
+            "size": 64821
+          },
+          "preprocessor_config.json": {
+            "sha256": "45e120a4eda2c20c5d7f2ea9354e63536bf35e27aa573fb7cdf78017b378770d",
+            "size": 330
+          },
+          "tokenizer_config.json": {
+            "sha256": "4942d005604266809309cabc9f4e9cb89ce855d59b14681fdc0e1cc62ea26c4c",
+            "size": 12487
+          },
+          "vocab.json": {
+            "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+            "size": 2776833
+          }
+        }
+      }
+    },
+    {
+      "id": "mms-fa",
+      "category": "alignment",
+      "name": "Meta MMS-FA-300M-1130",
+      "purpose": "多语言字级强制对齐（MMS 引擎主力；Qwen 引擎的交叉校验/兜底）",
+      "required_for": [
+        "mms_align"
+      ],
+      "default": false,
+      "download_policy": "on_demand",
+      "approx_size": 1262047414,
+      "license": "CC-BY-NC 4.0（Meta MMS，非商业）；对齐代码 MIT",
+      "note": "torchaudio MMS_FA 官方权重（facebook/MMS，1100+ 语言 uroman 罗马化）。缓存到 models/mms/hub/checkpoints/model.pt，torchaudio 直接加载。",
+      "source": {
+        "kind": "http",
+        "urls": [
+          "https://dl.fbaipublicfiles.com/mms/torchaudio/ctc_alignment_mling_uroman/model.pt"
+        ],
+        "note": "Meta 官方 CDN，实测国内 40MB/s"
+      },
+      "verify": {
+        "kind": "file_sha256",
+        "target": "alignment/mms/hub/checkpoints/model.pt",
+        "size": 1262047414,
+        "sha256": "20ef12963ab4924bef49ac4fc7f58ad5da2ee43b2c11bc8c853c9b90ecdbc680"
+      }
+    },
+    {
+      "id": "paraformer-zh",
+      "category": "alignment",
+      "name": "Paraformer-ZH",
+      "purpose": "达摩院 FunASR：原生字级毫秒时间戳，VAD 自动分段长音频，无时长限制",
+      "required_for": [
+        "paraformer_align"
+      ],
+      "default": false,
+      "download_policy": "on_demand",
+      "approx_size": 890000000,
+      "license": "MIT（FunASR/ModelScope 达摩院）",
+      "note": "funasr 生态（MODELSCOPE_CACHE=data/models/funasr），首次使用自动下载；中文 ASR/时间戳 SOTA。",
+      "source": {
+        "kind": "modelscope",
+        "note": "funasr AutoModel 自动下载 paraformer-zh + fsmn-vad"
+      },
+      "verify": {
+        "kind": "dir_exists",
+        "target": "alignment/funasr/models"
+      }
+    },
+    {
+      "id": "qwen3-fa-ultra",
+      "category": "alignment",
+      "name": "Qwen3-ForcedAligner-Ultra, FIXED",
+      "purpose": "社区在官方 0.6B 上 70h 多语种 LoRA 精修：MAE 60.9ms vs 官方 89.7ms，抗漂移更强",
+      "required_for": [
+        "qwen_align"
+      ],
+      "default": false,
+      "download_policy": "on_demand",
+      "recommended": false,
+      "approx_size": 1851445506,
+      "license": "Apache-2.0（17slever17，基于官方 Qwen3-FA-0.6B）",
+      "note": "与官方版共用 qwen-asr 运行时，引擎选「Qwen3-FA Ultra」即用。下载源仅 HuggingFace（官方/HF-Mirror），无 ModelScope 镜像。",
+      "source": {
+        "kind": "http_files",
+        "note": "HF-Mirror 优先（国内直连），HuggingFace 官方回退"
+      },
+      "files": [
+        {
+          "rel": "config.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/config.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/config.json"
+          ],
+          "size": 5632
+        },
+        {
+          "rel": "model.safetensors",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/model.safetensors",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/model.safetensors"
+          ],
+          "size": 1835544544
+        },
+        {
+          "rel": "preprocessor_config.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/preprocessor_config.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/preprocessor_config.json"
+          ],
+          "size": 357
+        },
+        {
+          "rel": "tokenizer_config.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/tokenizer_config.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/tokenizer_config.json"
+          ],
+          "size": 12696
+        },
+        {
+          "rel": "vocab.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/vocab.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/vocab.json"
+          ],
+          "size": 2776833
+        },
+        {
+          "rel": "tokenizer.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/tokenizer.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/tokenizer.json"
+          ],
+          "size": 11429688
+        },
+        {
+          "rel": "merges.txt",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/merges.txt",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/merges.txt"
+          ],
+          "size": 1671853
+        },
+        {
+          "rel": "added_tokens.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/added_tokens.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/added_tokens.json"
+          ],
+          "size": 1591
+        },
+        {
+          "rel": "special_tokens_map.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/special_tokens_map.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/special_tokens_map.json"
+          ],
+          "size": 1008
+        },
+        {
+          "rel": "chat_template.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/chat_template.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/chat_template.json"
+          ],
+          "size": 1161
+        },
+        {
+          "rel": "generation_config.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/generation_config.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/generation_config.json"
+          ],
+          "size": 143
+        }
+      ],
+      "verify": {
+        "kind": "files_exist",
+        "target": "alignment/Qwen3-ForcedAligner-Ultra",
+        "files": [
+          "alignment/Qwen3-ForcedAligner-Ultra/config.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/model.safetensors",
+          "alignment/Qwen3-ForcedAligner-Ultra/preprocessor_config.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/tokenizer_config.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/vocab.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/tokenizer.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/merges.txt",
+          "alignment/Qwen3-ForcedAligner-Ultra/added_tokens.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/special_tokens_map.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/chat_template.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/generation_config.json"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-fa-ultra-head",
+      "category": "alignment",
+      "name": "Qwen3-ForcedAligner-Ultra + Local Head, FIXED",
+      "purpose": "Ultra 全部权重 + 70h Local Head 边界精修头（P90 81.9ms，起始误差再降 4%）",
+      "required_for": [
+        "qwen_align"
+      ],
+      "default": false,
+      "download_policy": "on_demand",
+      "recommended": false,
+      "approx_size": 1853074907,
+      "license": "Apache-2.0（17slever17）",
+      "note": "含 Ultra 基座与 local_head/ 精修头（companion 运行时后续接入）。与 Ultra 共用同一模型目录，下载本条后 Ultra 亦显示就绪。",
+      "source": {
+        "kind": "http_files",
+        "note": "HF-Mirror 优先（国内直连），HuggingFace 官方回退"
+      },
+      "files": [
+        {
+          "rel": "config.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/config.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/config.json"
+          ],
+          "size": 5632
+        },
+        {
+          "rel": "model.safetensors",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/model.safetensors",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/model.safetensors"
+          ],
+          "size": 1835544544
+        },
+        {
+          "rel": "preprocessor_config.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/preprocessor_config.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/preprocessor_config.json"
+          ],
+          "size": 357
+        },
+        {
+          "rel": "tokenizer_config.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/tokenizer_config.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/tokenizer_config.json"
+          ],
+          "size": 12696
+        },
+        {
+          "rel": "vocab.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/vocab.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/vocab.json"
+          ],
+          "size": 2776833
+        },
+        {
+          "rel": "tokenizer.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/tokenizer.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/tokenizer.json"
+          ],
+          "size": 11429688
+        },
+        {
+          "rel": "merges.txt",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/merges.txt",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/merges.txt"
+          ],
+          "size": 1671853
+        },
+        {
+          "rel": "added_tokens.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/added_tokens.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/added_tokens.json"
+          ],
+          "size": 1591
+        },
+        {
+          "rel": "special_tokens_map.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/special_tokens_map.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/special_tokens_map.json"
+          ],
+          "size": 1008
+        },
+        {
+          "rel": "chat_template.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/chat_template.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/chat_template.json"
+          ],
+          "size": 1161
+        },
+        {
+          "rel": "generation_config.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/generation_config.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/generation_config.json"
+          ],
+          "size": 143
+        },
+        {
+          "rel": "local_head/config.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/local_head/config.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/local_head/config.json"
+          ],
+          "size": 1150
+        },
+        {
+          "rel": "local_head/model.safetensors",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/local_head/model.safetensors",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/local_head/model.safetensors"
+          ],
+          "size": 1623376
+        },
+        {
+          "rel": "local_head/normalizer.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/local_head/normalizer.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/local_head/normalizer.json"
+          ],
+          "size": 4370
+        },
+        {
+          "rel": "local_head/provenance.json",
+          "urls": [
+            "https://hf-mirror.com/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/local_head/provenance.json",
+            "https://huggingface.co/17slever17/Qwen3-ForcedAligner-Ultra/resolve/main/local_head/provenance.json"
+          ],
+          "size": 505
+        }
+      ],
+      "verify": {
+        "kind": "files_exist",
+        "target": "alignment/Qwen3-ForcedAligner-Ultra",
+        "files": [
+          "alignment/Qwen3-ForcedAligner-Ultra/config.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/model.safetensors",
+          "alignment/Qwen3-ForcedAligner-Ultra/preprocessor_config.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/tokenizer_config.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/vocab.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/tokenizer.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/merges.txt",
+          "alignment/Qwen3-ForcedAligner-Ultra/added_tokens.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/special_tokens_map.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/chat_template.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/generation_config.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/local_head/config.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/local_head/model.safetensors",
+          "alignment/Qwen3-ForcedAligner-Ultra/local_head/normalizer.json",
+          "alignment/Qwen3-ForcedAligner-Ultra/local_head/provenance.json"
+        ]
+      }
+    },
+    {
+      "id": "stars",
+      "category": "alignment",
+      "name": "STARS",
+      "purpose": "歌声转写/音素级对齐/技巧标注统一框架（arXiv 2507.06670），含 RMVPE 音高模型",
+      "required_for": [],
+      "default": false,
+      "download_policy": "on_demand",
+      "recommended": false,
+      "approx_size": 1648756890,
+      "license": "研究用途（STARS 官方仓库 Disclaimer：禁止未经同意合成他人歌声）",
+      "note": "官方检查点（HF verstar/STARS）：中文模型 + 中英双语模型 + RMVPE。引擎接入开发中，当前可先行下载备用。需纯人声音频效果最佳。",
+      "source": {
+        "kind": "http_files",
+        "note": "HF-Mirror 优先（国内直连），HuggingFace 官方回退"
+      },
+      "files": [
+        {
+          "rel": "rmvpe/model.pt",
+          "urls": [
+            "https://hf-mirror.com/verstar/STARS/resolve/main/rmvpe/model.pt",
+            "https://huggingface.co/verstar/STARS/resolve/main/rmvpe/model.pt"
+          ],
+          "size": 368492925
+        },
+        {
+          "rel": "stars_chinese/model_ckpt_steps_200000.ckpt",
+          "urls": [
+            "https://hf-mirror.com/verstar/STARS/resolve/main/stars_chinese/model_ckpt_steps_200000.ckpt",
+            "https://huggingface.co/verstar/STARS/resolve/main/stars_chinese/model_ckpt_steps_200000.ckpt"
+          ],
+          "size": 601773408
+        },
+        {
+          "rel": "stars_chinese_english_bilingual/model_ckpt_steps_300000.ckpt",
+          "urls": [
+            "https://hf-mirror.com/verstar/STARS/resolve/main/stars_chinese_english_bilingual/model_ckpt_steps_300000.ckpt",
+            "https://huggingface.co/verstar/STARS/resolve/main/stars_chinese_english_bilingual/model_ckpt_steps_300000.ckpt"
+          ],
+          "size": 678490557
+        }
+      ],
+      "verify": {
+        "kind": "files_exist",
+        "target": "alignment/stars",
+        "files": [
+          "alignment/stars/rmvpe/model.pt",
+          "alignment/stars/stars_chinese/model_ckpt_steps_200000.ckpt",
+          "alignment/stars/stars_chinese_english_bilingual/model_ckpt_steps_300000.ckpt"
+        ]
+      }
+    }
+  ]
+}

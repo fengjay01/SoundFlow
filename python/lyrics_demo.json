@@ -1,0 +1,75 @@
+{
+  "version": "1.0",
+  "language": "zh",
+  "source": "manual-demo",
+  "alignment_model": "manual",
+  "lines": [
+    {
+      "id": "L1",
+      "text": "星光落在安静的屋檐",
+      "start": 5000,
+      "end": 9000,
+      "words": [
+        {"char": "星", "start": 5000, "end": 5450, "confidence": 0.99},
+        {"char": "光", "start": 5450, "end": 5950, "confidence": 0.99},
+        {"char": "落", "start": 5950, "end": 6350, "confidence": 0.98},
+        {"char": "在", "start": 6350, "end": 6800, "confidence": 0.98},
+        {"char": "安", "start": 6800, "end": 7350, "confidence": 0.97},
+        {"char": "静", "start": 7350, "end": 7800, "confidence": 0.97},
+        {"char": "的", "start": 7800, "end": 8200, "confidence": 0.95},
+        {"char": "屋", "start": 8200, "end": 8600, "confidence": 0.96},
+        {"char": "檐", "start": 8600, "end": 9000, "confidence": 0.96}
+      ]
+    },
+    {
+      "id": "L2",
+      "text": "风把夏天吹得很远。",
+      "start": 9500,
+      "end": 13000,
+      "words": [
+        {"char": "风", "start": 9500, "end": 9900, "confidence": 0.98},
+        {"char": "把", "start": 9900, "end": 10400, "confidence": 0.97},
+        {"char": "夏", "start": 10400, "end": 10850, "confidence": 0.96},
+        {"char": "天", "start": 10850, "end": 11250, "confidence": 0.96},
+        {"char": "吹", "start": 11250, "end": 11800, "confidence": 0.94},
+        {"char": "得", "start": 11800, "end": 12250, "confidence": 0.92},
+        {"char": "很", "start": 12250, "end": 12650, "confidence": 0.93},
+        {"char": "远", "start": 12650, "end": 13000, "confidence": 0.95}
+      ]
+    },
+    {
+      "id": "L3",
+      "text": "我们沿着河岸，慢慢走",
+      "start": 13500,
+      "end": 17500,
+      "words": [
+        {"char": "我", "start": 13500, "end": 13950, "confidence": 0.99},
+        {"char": "们", "start": 13950, "end": 14450, "confidence": 0.98},
+        {"char": "沿", "start": 14450, "end": 14900, "confidence": 0.96},
+        {"char": "着", "start": 14900, "end": 15350, "confidence": 0.95},
+        {"char": "河", "start": 15350, "end": 15850, "confidence": 0.97},
+        {"char": "岸", "start": 15850, "end": 16300, "confidence": 0.97},
+        {"char": "慢", "start": 16300, "end": 16750, "confidence": 0.94},
+        {"char": "慢", "start": 16750, "end": 17200, "confidence": 0.94},
+        {"char": "走", "start": 17200, "end": 17500, "confidence": 0.92}
+      ]
+    },
+    {
+      "id": "L4",
+      "text": "那句 hello 轻轻落在耳边",
+      "start": 18000,
+      "end": 22500,
+      "words": [
+        {"char": "那", "start": 18000, "end": 18450, "confidence": 0.98},
+        {"char": "句", "start": 18450, "end": 18900, "confidence": 0.97},
+        {"char": "hello", "start": 18900, "end": 19500, "confidence": 0.88},
+        {"char": "轻", "start": 19500, "end": 19950, "confidence": 0.96},
+        {"char": "轻", "start": 19950, "end": 20400, "confidence": 0.96},
+        {"char": "落", "start": 20400, "end": 20900, "confidence": 0.95},
+        {"char": "在", "start": 20900, "end": 21350, "confidence": 0.95},
+        {"char": "耳", "start": 21350, "end": 21900, "confidence": 0.93},
+        {"char": "边", "start": 21900, "end": 22500, "confidence": 0.94}
+      ]
+    }
+  ]
+}

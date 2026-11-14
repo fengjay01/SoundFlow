@@ -1,0 +1,166 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Frontend build
+dist/
+
+# Tauri / Rust build
+src-tauri/target/
+src-tauri/target/**
+src-tauri/gen/schemas/linux-schema.json
+
+# Python cache
+python/preinstalled_plugins/
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.python-version
+.venv/
+venv/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local AI tooling state
+.claude/
+.serena/
+.playwright-mcp/
+.memory/
+
+# Local runtime outputs
+data/
+results/
+outputs/
+*.tmp
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Quark netdisk cookie (local only — must be stored as the QUARK_COOKIE repo secret)
+cookie.txt
+
+# Local planning / generated docs not committed for public source release
+*.md
+!README.md
+!README.zh-CN.md
+!CONTRIBUTING.md
+!setup/*.md
+docs/
+.omc/
+.spec-workflow/
+
+# Build/release artifacts
+release/
+python-runtime/
+# src-tauri/resources/ is gitignored for generated runtime artifacts, but the
+# plugin SDK assets ship in-repo — unignore that subtree.
+src-tauri/resources/*
+!src-tauri/resources/plugin-sdk/
+src-tauri/tauri.bundle.resources.json
+*.zip
+*.tar.zst
+*.dmg
+*.msi
+*.exe
+!src-tauri/icons/*.ico
+.uv-cache/
+.tmp/
+.pi/herdr-team/
+
+# Debug / test media that used to pollute python/ during development.
+# Keep these patterns even though the files are gone, so a stray screenshot,
+# rendered karaoke mp4 or ASS subtitle can never be committed again.
+python/*.png
+python/*.jpg
+python/*.jpeg
+python/*.mp4
+python/*.ass
+python/*.lyrics.json
+python/test_out*/
+python/test_out_medium.*
+python/medium_check_*
+python/*_check_*.png
+
+# Isolated native audio experiments
+native/target/
+native/vendor/soundcraft-vst3-host/tests/fixture/target/
+data-vst-lab/
+.cache/
+
+# Local diagnostics (machine-specific absolute paths)
+# _diag/, .tmp/, .cache/ are consolidated into ./_debug_output/ (now INSIDE
+# this repo root). The rule below keeps the whole tree out of every commit,
+# so it is never pushed. Debug scripts/artifacts must NOT be written into
+# python/, data/ or other source dirs — see ./_debug_output/README.md.
+_diag/
+_debug_output/
+
+# ---- Commit hygiene: only source code reaches origin (2026-11-08) ----
+# Anything produced by a build, a test run, or a debug session stays local.
+# The debug/test-media rules above were python/-specific; these apply repo-wide.
+
+# Rust / Cargo: any target dir, including isolated CARGO_TARGET_DIR=target-check
+target/
+target-*/
+*.rlib
+*.rmeta
+*.d
+*.pdb
+*.ilk
+*.exp
+*.obj
+*.o
+*.a
+*.so
+*.dll
+
+# Frontend / bundler intermediates
+*.tsbuildinfo
+*.map
+.vite/
+vite.config.ts.timestamp-*
+vite.config.js.timestamp-*
+
+# Debug, rendered and one-off outputs (wherever they are written)
+test_out*/
+debug_output/
+debug-*/
+medium_check_*
+*_check_*.png
+*_debug_*.json
+*.lyrics.json
+*.ass
+*.mp4
+*.mkv
+*.mov
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.log.*
+*.tmp.json
+
+# README screenshots are source assets, NOT runtime results: the generic
+# "results/" rule above also matches images/screenshots/results/, which made
+# the "Results and audio stems" row render as broken images on GitHub.
+# Un-ignore the directory first (otherwise file-level exceptions cannot win).
+!images/screenshots/results/
+!images/screenshots/results/*.webp

@@ -1,0 +1,19 @@
+# SoundFlow 歌词管线（lyrics 包）运行依赖
+# 适用：win_amd64 的 Python 3.12/3.13（python.org 或 workbuddy 发行版）。
+#
+# 注意（实测教训）：MSYS2 ucrt64 Python 的 wheel 标签是 cp312-cp312-mingw_x86_64_ucrt_gnu，
+# PyPI 的二进制轮子（torch/ctranslate2/numpy）永远装不上（"from versions: none"），
+# 只有纯 Python 包能装。跑 WhisperX 必须用 win_amd64 标签的 Python（可 `pip debug --verbose` 确认）。
+#
+# 安装方式：核心依赖在 python/runtime-manifest.json 的 lyrics 组；可选引擎依赖
+# （funasr / qwen-asr / g2pflow / pycryptodome / pykakasi 等）在 lyricsOptional 组；
+# Qwen3-FA Ultra 的 companion wheel 不在 PyPI，由 lyricsOptionalWheels 里的双镜像地址安装。
+# 全部由「设置 → 运行环境 → 安装/修复此环境」随 active runtime 一起装好；
+# 歌词命令在环境就绪后复用该 runtime（旧的独立 .venv-asr 引导环境仅作过渡回退）。
+# 「检测环境」会实时探测以上依赖并列出缺失项。本文件仅用于手动排障，请不要再新建 .venv-asr。
+#
+# 许可证备注（AGPL 开源路线）：whisperX BSD-4-Clause；对齐默认权重 torchaudio MMS_FA 为
+# CC-BY-NC（非商用可用，本项目 AGPL 非商用发行符合）；闭源商用前须换许可干净的对齐权重。
+
+whisperx>=3.3.0
+pypinyin>=0.50
